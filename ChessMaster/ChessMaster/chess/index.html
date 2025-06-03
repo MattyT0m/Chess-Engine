@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .multiplayer { background-color: #4CAF50; }
+        .easy { background-color: #2196F3; }
+        .medium { background-color: #FF9800; }
+        .hard { background-color: #f44336; }
+        .new-game { background-color: #9C27B0; }
+        .undo { background-color: #607D8B; }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .board-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .chess-board {
+            width: 400px;
+            height: 400px;
+            border: 3px solid #333;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .square img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .light {
+            background-color: #F0D9B5;
+        }
+
+        .dark {
+            background-color: #B58863;
+        }
+
+        .selected {
+            background-color: #7B61FF !important;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .valid-move {
+            background-color: #90EE90 !important;
+        }
+
+        .valid-move::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 1;
+        }
+
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .status p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .move-history {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .move-history h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        @media (max-width: 600px) {
+            .chess-board {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .game-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chess Game</h1>
+        
+        <div class="game-controls">
+            <button class="multiplayer" onclick="startGame('multiplayer')">Two Player</button>
+            <button class="easy" onclick="startGame('computer', 'easy')">vs Computer (Easy)</button>
+            <button class="medium" onclick="startGame('computer', 'medium')">vs Computer (Medium)</button>
+            <button class="hard" onclick="startGame('computer', 'hard')">vs Computer (Hard)</button>
+            <button class="new-game" onclick="newGame()">New Game</button>
+            <button class="undo" onclick="undoMove()" id="undoBtn" disabled>Undo Move</button>
+        </div>
+
+        <div class="board-container">
+            <div class="chess-board" id="board"></div>
+        </div>
+
+        <div class="status" id="status">
+            <h2 id="gameStatus">White to move</h2>
+            <p id="gameMode">Two Player Mode</p>
+            <p id="gameInstruction">Click a piece to start</p>
+        </div>
+
+        <div class="game-info">
+            <div class="info-card">
+                <h4>Moves</h4>
+                <p id="moveCount">0</p>
+            </div>
+            <div class="info-card">
+                <h4>Captures</h4>
+                <p id="captureCount">0</p>
+            </div>
+            <div class="info-card">
+                <h4>Current Mode</h4>
+                <p id="currentMode">Two Player</p>
+            </div>
+        </div>
+
+        <div class="move-history">
+            <h3>Move History</h3>
+            <div id="moveHistory">No moves yet</div>
+        </div>
+    </div>
+
+    <script src="chess.js"></script>
+</body>
+</html>
